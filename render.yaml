@@ -1,0 +1,62 @@
+envVarGroups:
+  - name: masar-startup-shared
+    envVars:
+      - key: PITCH_SERVICE_TOKEN
+        generateValue: true
+
+services:
+  - type: web
+    name: masar-startup-muhannad-web
+    runtime: static
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: npm install && npm run build:web
+    staticPublishPath: apps/web/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://masar-startup-muhannad-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
+    name: masar-startup-muhannad-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: npm install && npm --workspace apps/api run build
+    startCommand: npm --workspace apps/api run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WEB_ORIGIN
+        value: https://masar-startup-muhannad-web.onrender.com
+      - key: PITCH_ANALYZER_URL
+        value: http://masar-startup-muhannad-analyzer:10000/internal/analyze
+      - fromGroup: masar-startup-shared
+
+  - type: pserv
+    name: masar-startup-muhannad-analyzer
+    runtime: python
+    plan: free
+    region: frankfurt
+    branch: main
+    rootDir: services/pitch-analyzer
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: MAX_FILE_SIZE_MB
+        value: "20"
+      - key: ANALYSIS_CONCURRENCY
+        value: "4"
+      - key: OPENAI_AGENT_MODEL
+        value: gpt-6.1-sol
+      - key: OPENAI_SYNTHESIS_MODEL
+        value: gpt-6-astra
+      - fromGroup: masar-startup-shared
