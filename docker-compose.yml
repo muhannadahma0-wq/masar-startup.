@@ -1,0 +1,64 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_API_BASE_URL: http://localhost:4000
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: masar
+      POSTGRES_USER: masar
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-dev-change-me}
+    ports:
+      - "5433:5432"
+    volumes:
+      - masar_pg_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U masar -d masar"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  pitch-analyzer:
+    build: ./services/pitch-analyzer
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_AGENT_MODEL: ${OPENAI_AGENT_MODEL:-gpt-6.1-sol}
+      OPENAI_SYNTHESIS_MODEL: ${OPENAI_SYNTHESIS_MODEL:-gpt-6-astra}
+      PITCH_SERVICE_TOKEN: ${PITCH_SERVICE_TOKEN:-local-change-me}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-20}
+      ANALYSIS_CONCURRENCY: ${ANALYSIS_CONCURRENCY:-8}
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      WEB_ORIGIN: http://localhost:5173
+      DATABASE_URL: postgresql://masar:${POSTGRES_PASSWORD:-local-dev-change-me}@db:5432/masar
+      PITCH_ANALYZER_URL: http://pitch-analyzer:8000/internal/analyze
+      PITCH_SERVICE_TOKEN: ${PITCH_SERVICE_TOKEN:-local-change-me}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-20}
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      pitch-analyzer:
+        condition: service_started
+volumes:
+  masar_pg_data:

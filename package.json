@@ -1,0 +1,13 @@
+{
+  "name": "masar-startup",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI startup development and funding discovery platform",
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "dev:api": "npm --workspace apps/api run dev",
+    "typecheck": "npm --workspace apps/web run typecheck && npm --workspace apps/api run typecheck"
+  },
+  "workspaces": ["apps/web", "apps/api"]
+}
