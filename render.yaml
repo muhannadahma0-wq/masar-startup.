@@ -38,10 +38,10 @@ services:
       - key: WEB_ORIGIN
         value: https://masar-startup-muhannad-web.onrender.com
       - key: PITCH_ANALYZER_URL
-        value: http://masar-startup-muhannad-analyzer:10000/internal/analyze
+        value: https://masar-startup-muhannad-analyzer.onrender.com/internal/analyze
       - fromGroup: masar-startup-shared
 
-  - type: pserv
+  - type: web
     name: masar-startup-muhannad-analyzer
     runtime: python
     plan: free
@@ -50,6 +50,7 @@ services:
     rootDir: services/pitch-analyzer
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: MAX_FILE_SIZE_MB
         value: "20"
