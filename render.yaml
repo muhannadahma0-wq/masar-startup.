@@ -29,12 +29,10 @@ services:
     region: frankfurt
     branch: main
     autoDeploy: true
-    buildCommand: npm install && npm --workspace apps/api run build
+    buildCommand: npm install --include=dev && npm --workspace apps/api run build
     startCommand: npm --workspace apps/api run start
     healthCheckPath: /health
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: WEB_ORIGIN
         value: https://masar-startup-muhannad-web.onrender.com
       - key: PITCH_ANALYZER_URL
@@ -43,21 +41,23 @@ services:
 
   - type: web
     name: masar-startup-muhannad-analyzer
-    runtime: python
+    runtime: docker
     plan: free
     region: frankfurt
     branch: main
-    rootDir: services/pitch-analyzer
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./services/pitch-analyzer/Dockerfile
+    dockerContext: ./services/pitch-analyzer
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: MAX_FILE_SIZE_MB
         value: "20"
       - key: ANALYSIS_CONCURRENCY
         value: "4"
       - key: OPENAI_AGENT_MODEL
-        value: gpt-6.1-sol
+        value: gpt-4.1-mini
       - key: OPENAI_SYNTHESIS_MODEL
-        value: gpt-6-astra
+        value: gpt-4.1
+      - key: OPENAI_API_KEY
+        sync: false
       - fromGroup: masar-startup-shared
