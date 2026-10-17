@@ -27,7 +27,7 @@ function getSupabaseHeaders(): Record<string, string> {
 async function fetchPublishedOpportunities(): Promise<unknown[]> {
   if (!supabaseUrl || !supabasePublishableKey) throw new Error('Supabase REST is not configured');
   const url = new URL('/rest/v1/opportunities', supabaseUrl);
-  url.searchParams.set('select', 'id,name,organization,type:support_type,amount_min,amount_max,currency,deadline,sourceUrl:official_url,lastVerifiedAt:last_verified_at');
+  url.searchParams.set('select', 'id,name,organization,description,type:support_type,amount_min,amount_max,currency,deadline,sourceUrl:official_url,lastVerifiedAt:last_verified_at');
   url.searchParams.set('status', 'eq.published');
   url.searchParams.set('approved_at', 'not.is.null');
   url.searchParams.set('order', 'deadline.asc.nullsfirst');
@@ -84,7 +84,7 @@ app.get('/health', async (_req, res) => {
 app.get('/api/opportunities', async (_req, res) => {
   if (pool) {
     try {
-      const result = await pool.query(`SELECT id, name, organization, support_type AS type, amount_min, amount_max, currency, deadline, official_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt" FROM opportunities WHERE status = 'published' AND approved_at IS NOT NULL ORDER BY deadline ASC NULLS LAST LIMIT 200`);
+      const result = await pool.query(`SELECT id, name, organization, description, support_type AS type, amount_min, amount_max, currency, deadline, official_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt" FROM opportunities WHERE status = 'published' AND approved_at IS NOT NULL ORDER BY deadline ASC NULLS LAST LIMIT 200`);
       return res.json({ items: result.rows, mode: 'database', disclaimer: 'Published records should be backed by reviewed official sources.' });
     } catch (err) {
       console.error('Opportunity query failed', err);
@@ -102,6 +102,9 @@ app.get('/api/opportunities', async (_req, res) => {
     }
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(503).json({ error: 'OPPORTUNITY_DATABASE_NOT_CONFIGURED' });
+  }
   return res.json({ items: demoOpportunities, mode: 'demo', disclaimer: 'Illustrative records only. Replace with reviewed official-source records before production.' });
 });
 app.post('/api/eligibility/evaluate',(req,res)=>{const parsed=EvaluationInputSchema.safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'INVALID_EVALUATION_INPUT',details:parsed.error.flatten()});return res.json(evaluateEligibility(parsed.data));});
