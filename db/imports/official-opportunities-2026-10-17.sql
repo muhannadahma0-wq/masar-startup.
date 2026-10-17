@@ -10,7 +10,7 @@ CREATE TEMP TABLE _masar_candidates (
  support_type TEXT NOT NULL, eligible_geographies TEXT[] NOT NULL, excluded_geographies TEXT[] NOT NULL,
  sectors TEXT[] NOT NULL, eligible_stages TEXT[] NOT NULL, amount_min NUMERIC(16,2), amount_max NUMERIC(16,2),
  currency CHAR(3), deadline TIMESTAMPTZ, rolling_admissions BOOLEAN NOT NULL,
- application_language TEXT[] NOT NULL, official_url TEXT NOT NULL, official_criteria TEXT NOT NULL
+ application_language TEXT[] NOT NULL, official_url TEXT NOT NULL, submission_url TEXT, official_criteria TEXT NOT NULL
 ) ON COMMIT DROP;
 
 INSERT INTO _masar_candidates VALUES
@@ -21,6 +21,7 @@ INSERT INTO _masar_candidates VALUES
  ARRAY['technology','digital products or services']::TEXT[], ARRAY[]::TEXT[],
  NULL,50000,'USD',NULL,FALSE,ARRAY[]::TEXT[],
  'https://risepalestine.intersecthub.org/grants/startup-grant/',
+ 'https://risepalestinesubmit.intersecthub.org/grant/startup%20Grant',
  'Early-stage startups in Gaza, the West Bank, and East Jerusalem affected by the war; stated cap USD 50,000 per startup. The official page says applications and disbursements begin after a minimum USD 500,000 commitment. Confirm current threshold, intake, geography, registration and technology criteria before publication.'
 ),
 (
@@ -30,6 +31,7 @@ INSERT INTO _masar_candidates VALUES
  ARRAY['technology','technology-enabled','innovative SME']::TEXT[], ARRAY[]::TEXT[],
  NULL,30000,'USD',NULL,TRUE,ARRAY[]::TEXT[],
  'https://ipsd.ps/content/programs/scale-market-access-matching-grants.html',
+ 'https://fs20.formsite.com/DAIForms/NEXUS-Scale/login',
  'Applicant must be legally registered with the Palestinian Ministry of National Economy, have an active tax file, have operated for at least three months, have annual revenue no greater than USD 5 million, demonstrate a verified market opportunity, be ready to enter or expand in a target market, and provide the required cost-share. Applications are rolling subject to funding availability and requirements. Confirm availability and geographic handling before publication.'
 ),
 (
@@ -38,6 +40,7 @@ INSERT INTO _masar_candidates VALUES
  'other', ARRAY['Palestine']::TEXT[], ARRAY[]::TEXT[], ARRAY[]::TEXT[], ARRAY[]::TEXT[],
  NULL,10000,'USD',NULL,FALSE,ARRAY[]::TEXT[],
  'https://www.pma.ps/start-now-program',
+ NULL,
  'Interest-free repayable financing, not a grant. Conditions shown include borrower age at least 22; ownership of at least 51% and self-management for at least one year; no more than nine workers; annual sales not exceeding USD 200,000; official registration or a tax file; no overdue installments; proof of use of funds; and monthly income sufficient to cover installments. Additional conditions apply to disability and vocational/technical education categories. Confirm current intake and geography before publication.'
 ),
 (
@@ -46,6 +49,7 @@ INSERT INTO _masar_candidates VALUES
  'grant', ARRAY['Gaza']::TEXT[], ARRAY[]::TEXT[], ARRAY['technology','tech consultancy','outsourcing']::TEXT[], ARRAY[]::TEXT[],
  NULL,NULL,'USD',NULL,FALSE,ARRAY[]::TEXT[],
  'https://risepalestine.intersecthub.org/grants/team-grant/',
+ 'https://risepalestinesubmit.intersecthub.org/grant/team%20Grant',
  'Company pathway: established technology company operating in Palestine; the page permits registered companies or companies in the process of/committed to Palestinian registration. Company should provide technology consultancies, outsourcing or technology-based consultancy services; show launched product/service traction and customer validation; and evidence operations/revenue affected by the war. Stipend amount period conflicts between official English and Arabic pages. Confirm eligible geography, exact amount/period and current intake before publication.'
 ),
 (
@@ -54,6 +58,7 @@ INSERT INTO _masar_candidates VALUES
  'grant', ARRAY['Gaza','West Bank','East Jerusalem']::TEXT[], ARRAY[]::TEXT[], ARRAY['technology','software','hardware','systems']::TEXT[], ARRAY[]::TEXT[],
  NULL,NULL,'USD',NULL,FALSE,ARRAY[]::TEXT[],
  'https://risepalestine.intersecthub.org/grants/team-grant/',
+ 'https://risepalestinesubmit.intersecthub.org/grant/freelancer%20Grant',
  'Freelancer pathway: detailed eligibility says the freelancer operated out of Gaza, has a registered Palestinian bank account, derives primary revenue from technology services/products/platforms/hardware/software/systems, and can evidence unfulfilled contractual obligations caused by the war. The overview also mentions West Bank and East Jerusalem; human confirmation required before using a hard geography rule. Maximum stated support is USD 1,500 per month for up to six months. Current intake must be confirmed.'
 ),
 (
@@ -62,6 +67,7 @@ INSERT INTO _masar_candidates VALUES
  'other', ARRAY['Palestine','Gaza','West Bank','East Jerusalem']::TEXT[], ARRAY[]::TEXT[], ARRAY['technology','digital products','software-driven hardware']::TEXT[], ARRAY[]::TEXT[],
  NULL,200000,'USD',NULL,FALSE,ARRAY[]::TEXT[],
  'https://risepalestine.intersecthub.org/grants/startup-grant/',
+ 'https://risepalestinesubmit.intersecthub.org/grant/startup%20Grant',
  'Hybrid bridge financing described as a mix of grants and SAFE notes, up to USD 200,000 per startup. Applicants are directed to indicate interest in the Startup Grant application. The page lists thresholds involving prior VC financing over USD 100,000, accelerator grant funding of USD 50,000 or more, or monthly revenue below USD 30,000; confirm the exact logical conditions, eligibility, instrument, application status and funding availability with RISE before publication.'
 );
 
@@ -81,7 +87,12 @@ INSERT INTO _masar_sources (slug,source_url,source_title,source_excerpt) VALUES
 ('rise-team-company-stipend-review-2026','https://risepalestine.intersecthub.org/grants/team-grant/','RISE Palestine — TEAM Grant','The page describes emergency relief and emergency-hire stipends for technology companies affected by the war; its English page states up to USD 10,000 per company and a minimum USD 500,000 commitment condition.'),
 ('rise-team-company-stipend-review-2026','https://risepalestine.intersecthub.org/ar/%D8%B3%D8%A7%D9%87%D9%85/','RISE Palestine Arabic — Contribute / TEAM company stipend','The Arabic programme page describes up to USD 10,000 per month for up to three months, creating an amount-period conflict with the English TEAM page.'),
 ('rise-team-freelancer-stipend-review-2026','https://risepalestine.intersecthub.org/grants/team-grant/','RISE Palestine — TEAM Grant','The detailed freelancer pathway says applicants operated out of Gaza, have a registered Palestinian bank account, earn primary revenue from technical work, and can evidence unfulfilled contracts; up to USD 1,500 monthly for up to six months.'),
-('safe-palestine-bridge-financing-review-2026','https://risepalestine.intersecthub.org/grants/startup-grant/','RISE Palestine — Startup Grant / SAFE Palestine bridge financing','The page describes up to USD 200,000 per eligible startup via a mix of grants and SAFE notes; exact qualification alternatives require human confirmation.');
+('safe-palestine-bridge-financing-review-2026','https://risepalestine.intersecthub.org/grants/startup-grant/','RISE Palestine — Startup Grant / SAFE Palestine bridge financing','The page describes up to USD 200,000 per eligible startup via a mix of grants and SAFE notes; exact qualification alternatives require human confirmation.'),
+('rise-palestine-startup-grant-review-2026','https://risepalestinesubmit.intersecthub.org/grant/startup%20Grant','RISE Palestine — Startup Grant application form','Official application form linked from the programme page. Form availability does not by itself confirm that funding intake is open.'),
+('safe-palestine-bridge-financing-review-2026','https://risepalestinesubmit.intersecthub.org/grant/startup%20Grant','RISE Palestine — Startup Grant application form (SAFE interest indicated in same form)','Official Startup Grant form is also the pathway to indicate interest in SAFE Palestine bridge financing.'),
+('rise-team-company-stipend-review-2026','https://risepalestinesubmit.intersecthub.org/grant/team%20Grant','RISE Palestine — TEAM company application form','Official form linked from the TEAM programme page. Current application intake and amount period require human confirmation.'),
+('rise-team-freelancer-stipend-review-2026','https://risepalestinesubmit.intersecthub.org/grant/freelancer%20Grant','RISE Palestine — TEAM freelancer application form','Official form linked from the TEAM programme page. Current intake and detailed geography rule require human confirmation.'),
+('scale-market-access-matching-grants-review-2026','https://fs20.formsite.com/DAIForms/NEXUS-Scale/login','IPSD II — NEXUS Scale application form','Official Apply Now link from the Scale programme page; account creation is required to complete the application.');
 
 CREATE TEMP TABLE _masar_criteria (
  slug TEXT NOT NULL REFERENCES _masar_candidates(slug), criterion_key TEXT NOT NULL, label TEXT NOT NULL,
@@ -129,7 +140,7 @@ WITH added AS (
  )
  SELECT c.slug,c.name,c.organization,c.description,c.support_type,'review',c.eligible_geographies,
   c.excluded_geographies,c.sectors,c.eligible_stages,c.amount_min,c.amount_max,c.currency,c.deadline,
-  c.rolling_admissions,c.application_language,c.official_url,NULL,c.official_criteria,now()
+  c.rolling_admissions,c.application_language,c.official_url,c.submission_url,c.official_criteria,now()
  FROM _masar_candidates c
  WHERE NOT EXISTS (
   SELECT 1 FROM opportunities o
@@ -144,6 +155,21 @@ WITH added AS (
     )
     AND regexp_replace(lower(coalesce(o.official_url,'')), '/+$', '') =
         regexp_replace(lower(c.official_url), '/+$', '')
+   )
+   OR (
+    c.submission_url IS NOT NULL
+    AND NOT EXISTS (
+      SELECT 1 FROM _masar_candidates sibling
+      WHERE sibling.slug <> c.slug
+        AND regexp_replace(lower(coalesce(sibling.submission_url,'')), '/+$', '') =
+            regexp_replace(lower(c.submission_url), '/+$', '')
+    )
+    AND (
+      regexp_replace(lower(coalesce(o.submission_url,'')), '/+$', '') =
+          regexp_replace(lower(c.submission_url), '/+$', '')
+      OR regexp_replace(lower(coalesce(o.official_url,'')), '/+$', '') =
+          regexp_replace(lower(c.submission_url), '/+$', '')
+    )
    )
  )
  ON CONFLICT (slug) DO NOTHING

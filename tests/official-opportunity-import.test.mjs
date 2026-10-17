@@ -31,13 +31,19 @@ test('import is transactional and does not update/delete existing opportunity re
 
 test('official evidence and rule records are included', () => {
   assert.match(sql, /INSERT INTO opportunity_sources/);
+  assert.match(sql, /c\.official_url,c\.submission_url,c\.official_criteria/);
+  assert.match(sql, /sibling\.submission_url/);
   assert.match(sql, /INSERT INTO eligibility_criteria/);
   for (const url of [
     'https://risepalestine.intersecthub.org/apply-for-support/',
     'https://risepalestine.intersecthub.org/grants/startup-grant/',
     'https://risepalestine.intersecthub.org/grants/team-grant/',
     'https://ipsd.ps/content/programs/scale-market-access-matching-grants.html',
-    'https://www.pma.ps/start-now-program'
+    'https://www.pma.ps/start-now-program',
+    'https://risepalestinesubmit.intersecthub.org/grant/startup%20Grant',
+    'https://risepalestinesubmit.intersecthub.org/grant/team%20Grant',
+    'https://risepalestinesubmit.intersecthub.org/grant/freelancer%20Grant',
+    'https://fs20.formsite.com/DAIForms/NEXUS-Scale/login'
   ]) assert.ok(sql.includes(url), 'missing official source ' + url);
 });
 
