@@ -36,6 +36,45 @@ jobs:
         run: npm run build:web
       - name: Run non-destructive static checks
         run: npm run test:import-review
+      - name: Smoke-test live API and Supabase connection (main pushes only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          API_BASE_URL: https://masar-startup-muhannad-api.onrender.com
+        run: |
+          set -euo pipefail
+          health_file="$(mktemp)"
+          opportunities_file="$(mktemp)"
+          trap 'rm -f "$health_file" "$opportunities_file"' EXIT
+          healthy=false
+          for attempt in $(seq 1 12); do
+            status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 -o "$health_file" -w '%{http_code}' "$API_BASE_URL/health" || true)"
+            if [ "$status" = "200" ] && node -e 'const fs=require("node:fs"); const x=JSON.parse(fs.readFileSync(process.argv[1],"utf8")); process.exit(x.database === "connected" ? 0 : 1)' "$health_file"; then
+              healthy=true
+              break
+            fi
+            echo "Waiting for deployed API/Supabase health (attempt $attempt/12; HTTP ${status:-no-response})"
+            sleep 5
+          done
+          if [ "$healthy" != "true" ]; then
+            cat "$health_file"
+            echo "API health did not confirm database: connected."
+            exit 1
+          fi
+          status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 -o "$opportunities_file" -w '%{http_code}' "$API_BASE_URL/api/opportunities")"
+          if [ "$status" != "200" ]; then
+            cat "$opportunities_file"
+            echo "Opportunity endpoint returned HTTP $status."
+            exit 1
+          fi
+          node - "$health_file" "$opportunities_file" <<'NODE'
+          const fs = require('node:fs');
+          const health = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const result = JSON.parse(fs.readFileSync(process.argv[3], 'utf8'));
+          if (health.database !== 'connected') throw new Error('Database is not connected');
+          if (result.mode !== 'database') throw new Error('API is not using database mode');
+          if (!Array.isArray(result.items)) throw new Error('Opportunity items are not an array');
+          console.log(`Live smoke test passed: database=${health.database}; mode=${result.mode}; visible published opportunities=${result.items.length}.`);
+          NODE
 
   postgres-import-integration:
     runs-on: ubuntu-latest
