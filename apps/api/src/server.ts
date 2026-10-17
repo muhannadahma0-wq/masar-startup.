@@ -54,6 +54,47 @@ async function checkSupabaseRest(): Promise<boolean> {
     return false;
   }
 }
+
+type AuthCheck = 'valid' | 'invalid' | 'unavailable';
+
+async function validateSupabaseAccessToken(authorization: string | undefined): Promise<AuthCheck> {
+  if (!supabaseUrl || !supabasePublishableKey) return 'unavailable';
+  if (!authorization?.startsWith('Bearer ') || authorization.length < 16) return 'invalid';
+  try {
+    const response = await fetch(new URL('/auth/v1/user', supabaseUrl), {
+      headers: {
+        apikey: supabasePublishableKey,
+        authorization,
+      },
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (response.status === 401 || response.status === 403) return 'invalid';
+    if (!response.ok) return 'unavailable';
+    const user = await response.json() as { id?: unknown };
+    return typeof user.id === 'string' && user.id.length > 0 ? 'valid' : 'invalid';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+const requireSupabaseAuth: express.RequestHandler = (req, res, next) => {
+  void (async () => {
+    if (!supabaseRestConfigured) {
+      res.status(503).json({ error: 'AUTH_NOT_CONFIGURED' });
+      return;
+    }
+    const result = await validateSupabaseAccessToken(req.get('authorization'));
+    if (result === 'invalid') {
+      res.status(401).json({ error: 'AUTHENTICATION_REQUIRED' });
+      return;
+    }
+    if (result === 'unavailable') {
+      res.status(503).json({ error: 'AUTH_SERVICE_UNAVAILABLE' });
+      return;
+    }
+    next();
+  })().catch(next);
+};
 const allowedOrigins = (process.env.WEB_ORIGIN || 'http://localhost:5173').split(',').map(x => x.trim());
 app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -108,7 +149,7 @@ app.get('/api/opportunities', async (_req, res) => {
 });
 app.post('/api/eligibility/evaluate',(req,res)=>{const parsed=EvaluationInputSchema.safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'INVALID_EVALUATION_INPUT',details:parsed.error.flatten()});return res.json(evaluateEligibility(parsed.data));});
 const AnalyzeFieldsSchema = z.object({ startup_name: z.string().trim().min(1).max(120).default('Unnamed startup') });
-app.post('/api/pitch-analyses',upload.single('file'),async(req,res)=>{
+app.post('/api/pitch-analyses',requireSupabaseAuth,upload.single('file'),async(req,res)=>{
  if(!req.file)return res.status(400).json({error:'FILE_REQUIRED',message:'Upload a PDF or PPTX file.'});
  const ext=req.file.originalname.toLowerCase().split('.').pop();const allowedMime=new Set(['application/pdf','application/vnd.openxmlformats-officedocument.presentationml.presentation']);
  if(!['pdf','pptx'].includes(ext||'')||!allowedMime.has(req.file.mimetype))return res.status(415).json({error:'UNSUPPORTED_FILE_TYPE',message:'Only PDF and PPTX are supported.'});
