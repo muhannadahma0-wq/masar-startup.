@@ -104,3 +104,28 @@ CREATE TABLE IF NOT EXISTS opportunity_source_chunks (
 );
 CREATE INDEX IF NOT EXISTS opportunity_chunk_source_idx ON opportunity_source_chunks(source_id, chunk_index);
 -- Add vector indexes only after embeddings exist and operator support is confirmed.
+
+-- Security baseline for Supabase/PostgREST deployments.
+-- No client policies are provided for private/user-specific tables; they stay inaccessible
+-- through anon/authenticated until application-specific ownership policies are designed.
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.startup_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pitch_analyses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.evidence_claims ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.opportunities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.opportunity_sources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.opportunity_versions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.eligibility_criteria ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.match_evaluations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.application_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.source_discovery_runs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.opportunity_source_chunks ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public reads approved published opportunities" ON public.opportunities;
+CREATE POLICY "Public reads approved published opportunities"
+ON public.opportunities
+FOR SELECT
+TO anon, authenticated
+USING (status = 'published' AND approved_at IS NOT NULL);
