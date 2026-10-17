@@ -166,3 +166,27 @@ test('RLS integration fixture verifies two-user isolation and rolls back every f
   assert.match(rlsIntegrationSql, /Founder was able to update their own role/);
   assert.match(rlsIntegrationSql, /ROLLBACK;/);
 });
+
+
+const apiSource = readFileSync(new URL('../apps/api/src/server.ts', import.meta.url), 'utf8');
+const webClientSource = readFileSync(new URL('../apps/web/src/lib/supabase.ts', import.meta.url), 'utf8');
+
+test('Supabase Auth is configured with a publishable key and pitch analysis rejects anonymous callers', () => {
+  assert.match(webClientSource, /VITE_SUPABASE_URL/);
+  assert.match(webClientSource, /VITE_SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(webClientSource, /createClient\(url, publishableKey/);
+  assert.match(webApp, /supabase\.auth\.signUp/);
+  assert.match(webApp, /supabase\.auth\.signInWithPassword/);
+  assert.match(webApp, /supabase\.auth\.onAuthStateChange/);
+  assert.match(webApp, /if\(nextSession\)\{\s*setAuthOpen\(false\)/);
+  assert.match(webApp, /protectedPages/);
+  assert.match(webApp, /auth_user_id/);
+  assert.match(webApp, /emailRedirectTo:\s*window\.location\.origin/);
+  assert.doesNotMatch(webClientSource, /sb_secret_/i);
+  assert.doesNotMatch(webClientSource, /service_role\\s*:/i);
+  assert.match(apiSource, /async function validateSupabaseAccessToken/);
+  assert.match(apiSource, /new URL\('\/auth\/v1\/user', supabaseUrl\)/);
+  assert.match(apiSource, /app\.post\('\/api\/pitch-analyses',requireSupabaseAuth,upload\.single\('file'\)/);
+  assert.match(apiSource, /AUTHENTICATION_REQUIRED/);
+  assert.match(apiSource, /AUTH_SERVICE_UNAVAILABLE/);
+});
