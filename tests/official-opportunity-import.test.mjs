@@ -105,6 +105,7 @@ test('Supabase REST fallback reads only published, approved opportunities with a
   assert.match(apiEnvExample, /SUPABASE_URL=/);
   assert.match(apiEnvExample, /SUPABASE_PUBLISHABLE_KEY=/);
   assert.doesNotMatch(apiServer, /service_role/i);
+  assert.ok(!apiServer.includes('authorization: `Bearer ${supabasePublishableKey}`'), 'publishable keys must only be sent through the apikey header');
 });
 
 
