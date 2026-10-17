@@ -6,7 +6,7 @@ type Page = 'dashboard' | 'analysis' | 'opportunities' | 'startup' | 'documents'
 type Lang = 'ar' | 'en';
 type Opportunity = { id:string; name:string; org:string; type:string; amountMin:number|null; amountMax:number|null; currency:string|null; deadline:string|null; status:'uncertain'|'eligible'; description:string; sourceUrl:string|null };
 
-function formatOpportunityAmount(o:Opportunity, ar:boolean, t:typeof text.ar):string {
+function formatOpportunityAmount(o:Opportunity, ar:boolean, t:{amountNotSpecified:string;deadlineNotSpecified:string}):string {
  const currency=o.currency||'USD';
  const format=(n:number)=>new Intl.NumberFormat(ar?'ar':'en-US',{maximumFractionDigits:0}).format(n);
  if(o.amountMin===null&&o.amountMax===null)return t.amountNotSpecified;
@@ -14,7 +14,7 @@ function formatOpportunityAmount(o:Opportunity, ar:boolean, t:typeof text.ar):st
  if(o.amountMax!==null)return `${ar?'حتى':'Up to'} ${currency} ${format(o.amountMax)}`;
  return `${ar?'من':'From'} ${currency} ${format(o.amountMin as number)}`;
 }
-function formatOpportunityDeadline(value:string|null, ar:boolean, t:typeof text.ar):string {
+function formatOpportunityDeadline(value:string|null, ar:boolean, t:{amountNotSpecified:string;deadlineNotSpecified:string}):string {
  if(!value)return t.deadlineNotSpecified;
  const date=new Date(value);
  return Number.isNaN(date.getTime())?t.deadlineNotSpecified:date.toLocaleDateString(ar?'ar':'en-US',{year:'numeric',month:'short',day:'numeric'});
