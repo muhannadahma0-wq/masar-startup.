@@ -110,12 +110,13 @@ function App(){
   },[]);
 
  useEffect(()=>{
-   if(!supabase||!session?.user.id){setMasarUserId(null);setProfileId(null);return;}
+   const client=supabase;
+   if(!client||!session?.user.id){setMasarUserId(null);setProfileId(null);return;}
    let active=true;
    const loadProfile=async()=>{
      setProfileDbLoading(true);
      setProfileError('');
-     const {data:userRow,error:userError}=await supabase
+     const {data:userRow,error:userError}=await client
        .from('users')
        .select('id,display_name,preferred_language')
        .eq('auth_user_id',session.user.id)
@@ -127,7 +128,7 @@ function App(){
      }
      if(!active)return;
      setMasarUserId(userRow.id);
-     const {data:startup,error:startupError}=await supabase
+     const {data:startup,error:startupError}=await client
        .from('startup_profiles')
        .select('id,name,sector,stage,funding_amount,funding_currency')
        .eq('owner_user_id',userRow.id)
