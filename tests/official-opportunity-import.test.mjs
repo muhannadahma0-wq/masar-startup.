@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const sql = readFileSync(new URL('../db/imports/official-opportunities-2026-10-17.sql', import.meta.url), 'utf8');
 const verifySql = readFileSync(new URL('../db/imports/verify-official-opportunities-2026-10-17.sql', import.meta.url), 'utf8');
+const preflightSql = readFileSync(new URL('../db/imports/preflight-official-opportunities-2026-10-17.sql', import.meta.url), 'utf8');
+const runbook = readFileSync(new URL('../docs/research/production-db-setup-and-import-ar.md', import.meta.url), 'utf8');
 const refs = JSON.parse(readFileSync(new URL('../data/research/open-source-project-references.json', import.meta.url), 'utf8'));
 const review = readFileSync(new URL('../docs/research/official-opportunities-and-open-source-review-ar.md', import.meta.url), 'utf8');
 
@@ -60,6 +62,21 @@ test('post-import verifier is read-only and checks each candidate plus linked ev
   assert.match(verifySql, /FROM source_discovery_runs/i);
   assert.doesNotMatch(verifySql, /\b(?:INSERT\s+INTO|UPDATE\s+opportunities|DELETE\s+FROM|TRUNCATE|DROP\s+TABLE|ALTER\s+TABLE)\b/i);
   for (const slug of candidateSlugs) assert.ok(verifySql.includes(slug), 'verifier missing candidate ' + slug);
+});
+
+test('production preflight only reads database identity, schema tables, and extensions', () => {
+  assert.match(preflightSql, /BEGIN TRANSACTION READ ONLY;/i);
+  assert.match(preflightSql, /current_database\(\)/i);
+  assert.match(preflightSql, /opportunities/);
+  assert.match(preflightSql, /opportunity_sources/);
+  assert.match(preflightSql, /eligibility_criteria/);
+  assert.match(preflightSql, /source_discovery_runs/);
+  assert.match(preflightSql, /pgcrypto/);
+  assert.match(preflightSql, /vector/);
+  assert.doesNotMatch(preflightSql, /\\b(?:INSERT\\s+INTO|UPDATE\\s+|DELETE\\s+FROM|TRUNCATE|DROP\\s+TABLE|ALTER\\s+TABLE|CREATE\\s+)\\b/i);
+  assert.match(runbook, /لا ترسل كلمة مرور قاعدة البيانات/);
+  assert.match(runbook, /backup|نسخة احتياطية/i);
+  assert.match(runbook, /database: connected/);
 });
 
 test('expired PEF announcement is excluded from candidate SQL', () => {
