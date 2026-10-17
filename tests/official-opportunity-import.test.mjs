@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+const schemaSql = readFileSync(new URL('../db/schema.sql', import.meta.url), 'utf8');
 const sql = readFileSync(new URL('../db/imports/official-opportunities-2026-10-17.sql', import.meta.url), 'utf8');
 const verifySql = readFileSync(new URL('../db/imports/verify-official-opportunities-2026-10-17.sql', import.meta.url), 'utf8');
 const preflightSql = readFileSync(new URL('../db/imports/preflight-official-opportunities-2026-10-17.sql', import.meta.url), 'utf8');
@@ -104,4 +105,20 @@ test('Supabase REST fallback reads only published, approved opportunities with a
   assert.match(apiEnvExample, /SUPABASE_URL=/);
   assert.match(apiEnvExample, /SUPABASE_PUBLISHABLE_KEY=/);
   assert.doesNotMatch(apiServer, /service_role/i);
+});
+
+
+test('database schema enables RLS on all public tables and only publishes approved opportunities for clients', () => {
+  const publicTables = [
+    'users', 'startup_profiles', 'pitch_analyses', 'evidence_claims', 'opportunities',
+    'opportunity_sources', 'opportunity_versions', 'eligibility_criteria', 'match_evaluations',
+    'application_records', 'notifications', 'source_discovery_runs', 'audit_log', 'opportunity_source_chunks'
+  ];
+  for (const table of publicTables) {
+    assert.match(schemaSql, new RegExp('ALTER TABLE public\\\\.' + table + ' ENABLE ROW LEVEL SECURITY;'));
+  }
+  assert.match(schemaSql, /CREATE POLICY "Public reads approved published opportunities"/);
+  assert.match(schemaSql, /TO anon, authenticated/);
+  assert.match(schemaSql, /status = 'published' AND approved_at IS NOT NULL/);
+  assert.match(schemaSql, /DROP POLICY IF EXISTS "Public reads approved published opportunities"/);
 });
