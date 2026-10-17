@@ -23,6 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install workspace dependencies
+        run: npm install
+      - name: Build API TypeScript
+        run: npm --workspace apps/api run build
       - name: Run non-destructive static checks
         run: npm run test:import-review
 
