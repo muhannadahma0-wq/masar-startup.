@@ -97,10 +97,10 @@ const apiEnvExample = readFileSync(new URL('../apps/api/.env.example', import.me
 test('Supabase REST fallback reads only published, approved opportunities with a publishable key', () => {
   assert.match(apiServer, /SUPABASE_URL/);
   assert.match(apiServer, /SUPABASE_PUBLISHABLE_KEY/);
-  assert.match(apiServer, /apikey:\\s*supabasePublishableKey/);
-  assert.match(apiServer, /status',\\s*'eq\\.published'/);
-  assert.match(apiServer, /approved_at',\\s*'not\\.is\\.null'/);
-  assert.match(apiServer, /mode:\\s*'database'/);
+  assert.match(apiServer, /apikey:\s*supabasePublishableKey/);
+  assert.match(apiServer, /status',\s*'eq\.published'/);
+  assert.match(apiServer, /approved_at',\s*'not\.is\.null'/);
+  assert.match(apiServer, /mode:\s*'database'/);
   assert.match(apiEnvExample, /SUPABASE_URL=/);
   assert.match(apiEnvExample, /SUPABASE_PUBLISHABLE_KEY=/);
   assert.doesNotMatch(apiServer, /service_role/i);
