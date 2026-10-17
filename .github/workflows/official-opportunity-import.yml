@@ -69,9 +69,9 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/imports/official-opportunities-2026-10-17.sql
           candidates="'rise-palestine-startup-grant-review-2026','scale-market-access-matching-grants-review-2026','start-now-interest-free-financing-review-2026','rise-team-company-stipend-review-2026','rise-team-freelancer-stipend-review-2026','safe-palestine-bridge-financing-review-2026'"
-          actual="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ($candidates) AND status = 'review'")"
+          actual="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ($candidates) AND status = 'review')"
           test "$actual" = "6"
-          published="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ($candidates) AND status = 'published'")"
+          published="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ($candidates) AND status = 'published')"
           test "$published" = "0"
           sources="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunity_sources s JOIN opportunities o ON o.id=s.opportunity_id WHERE o.slug IN ($candidates)")"
           test "$sources" -gt "0"
@@ -79,6 +79,8 @@ jobs:
           test "$criteria" -gt "0"
           sentinel="$(psql "$DATABASE_URL" -Atc "SELECT name || '|' || description || '|' || status FROM opportunities WHERE slug='preexisting-import-safety-sentinel'")"
           test "$sentinel" = "Preserve me|Existing row must not change|draft"
+      - name: Run read-only post-import verification queries
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/imports/verify-official-opportunities-2026-10-17.sql
       - name: Re-run import to prove idempotency
         run: |
           before="$(psql "$DATABASE_URL" -Atc "SELECT (SELECT count(*) FROM opportunities), (SELECT count(*) FROM opportunity_sources), (SELECT count(*) FROM eligibility_criteria)")"
