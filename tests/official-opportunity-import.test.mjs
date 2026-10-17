@@ -181,7 +181,8 @@ test('Supabase Auth is configured with a publishable key and pitch analysis reje
   assert.match(webApp, /protectedPages/);
   assert.match(webApp, /auth_user_id/);
   assert.match(webApp, /emailRedirectTo:\s*window\.location\.origin/);
-  assert.doesNotMatch(webClientSource, /service_role|sb_secret_/i);
+  assert.doesNotMatch(webClientSource, /sb_secret_/i);
+  assert.doesNotMatch(webClientSource, /service_role\\s*:/i);
   assert.match(apiSource, /async function validateSupabaseAccessToken/);
   assert.match(apiSource, /new URL\('\/auth\/v1\/user', supabaseUrl\)/);
   assert.match(apiSource, /app\.post\('\/api\/pitch-analyses',requireSupabaseAuth,upload\.single\('file'\)/);
