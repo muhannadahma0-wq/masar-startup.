@@ -13,6 +13,7 @@ on:
       - "data/research/**"
       - "docs/research/**"
       - "tests/official-opportunity-import.test.mjs"
+      - "tests/rls-ownership.integration.sql"
       - "apps/api/src/**"
       - "apps/api/.env.example"
       - "apps/web/src/**"
@@ -104,11 +105,27 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-      - name: Create Supabase client roles in the ephemeral PostgreSQL cluster
+      - name: Create Supabase auth fixtures and client roles in ephemeral PostgreSQL
         run: |
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN;"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon NOLOGIN;
+          CREATE ROLE authenticated NOLOGIN;
+          CREATE SCHEMA auth;
+          CREATE TABLE auth.users (
+            id uuid PRIMARY KEY,
+            email text UNIQUE,
+            raw_user_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb
+          );
+          CREATE FUNCTION auth.uid()
+          RETURNS uuid LANGUAGE sql STABLE
+          AS $ SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid $;
+          GRANT USAGE ON SCHEMA auth TO anon, authenticated;
+          GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated;
+          SQL
       - name: Apply current schema to an ephemeral database
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+      - name: Test ownership-aware RLS and privilege boundaries
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/rls-ownership.integration.sql
       - name: Run read-only database preflight
         run: |
           preflight_output="$(psql "$DATABASE_URL" -At -v ON_ERROR_STOP=1 -f db/imports/preflight-official-opportunities-2026-10-17.sql)"
