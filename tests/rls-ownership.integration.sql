@@ -35,10 +35,10 @@ VALUES
   'Founder B startup');
 
 INSERT INTO public.opportunities
- (id,slug,name,organization,description,support_type,status,approved_at)
+ (id,slug,name,organization,description,support_type,status,official_url,last_verified_at,approved_at)
 VALUES
- ('30000000-0000-0000-0000-000000000001','rls-test-published','RLS test published opportunity','Test','Disposable RLS fixture','grant','published',now()),
- ('30000000-0000-0000-0000-000000000002','rls-test-review','RLS test review opportunity','Test','Must stay private from public clients','grant','review',NULL);
+ ('30000000-0000-0000-0000-000000000001','rls-test-published','RLS test published opportunity','Test','Disposable RLS fixture','grant','published','https://example.test/published-opportunity',now(),now()),
+ ('30000000-0000-0000-0000-000000000002','rls-test-review','RLS test review opportunity','Test','Must stay private from public clients','grant','review',NULL,NULL,NULL);
 
 INSERT INTO public.application_records (startup_id, opportunity_id, notes)
 VALUES
