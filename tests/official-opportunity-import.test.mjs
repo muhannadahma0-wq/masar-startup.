@@ -6,7 +6,7 @@ const sql = readFileSync(new URL('../db/imports/official-opportunities-2026-10-1
 const refs = JSON.parse(readFileSync(new URL('../data/research/open-source-project-references.json', import.meta.url), 'utf8'));
 const review = readFileSync(new URL('../docs/research/official-opportunities-and-open-source-review-ar.md', import.meta.url), 'utf8');
 
-test('new official candidates are held in review; none is published automatically', () => {
+test('all six official candidates stay in review; nothing is published automatically', () => {
   assert.match(sql, /c\.slug,c\.name,c\.organization,c\.description,c\.support_type,'review'/);
   assert.match(sql, /'published',false/);
   for (const slug of [
@@ -19,22 +19,25 @@ test('new official candidates are held in review; none is published automaticall
   ]) assert.ok(sql.includes(slug), 'missing candidate ' + slug);
 });
 
-test('import is additive and never updates or deletes existing opportunities', () => {
+test('import is transactional and does not update/delete existing opportunity records', () => {
   assert.match(sql, /BEGIN;/);
   assert.match(sql, /COMMIT;/);
   assert.match(sql, /ON CONFLICT \(slug\) DO NOTHING/);
   assert.match(sql, /WHERE NOT EXISTS\s*\(/);
+  assert.match(sql, /SELECT 1 FROM _masar_candidates sibling/);
   assert.doesNotMatch(sql, /\bUPDATE\s+opportunities\b/i);
   assert.doesNotMatch(sql, /\bDELETE\s+FROM\s+opportunities\b/i);
 });
 
-test('sources and structured criteria are linked to official evidence', () => {
+test('official evidence and rule records are included', () => {
   assert.match(sql, /INSERT INTO opportunity_sources/);
   assert.match(sql, /INSERT INTO eligibility_criteria/);
   for (const url of [
     'https://risepalestine.intersecthub.org/apply-for-support/',
+    'https://risepalestine.intersecthub.org/grants/startup-grant/',
+    'https://risepalestine.intersecthub.org/grants/team-grant/',
     'https://ipsd.ps/content/programs/scale-market-access-matching-grants.html',
-    'https://www.pma.ps/start-now-program',\n    'https://risepalestine.intersecthub.org/grants/team-grant/',\n    'https://risepalestine.intersecthub.org/grants/startup-grant/'
+    'https://www.pma.ps/start-now-program'
   ]) assert.ok(sql.includes(url), 'missing official source ' + url);
 });
 
@@ -43,8 +46,9 @@ test('expired PEF announcement is excluded from candidate SQL', () => {
   assert.match(review, /30 سبتمبر 2026/);
 });
 
-test('repository references are separate from funding opportunities', () => {
-  assert.equal(refs.projects.length, 6);\n  assert.equal(refs.fundingResearchUpdate.length, 2);
+test('open-source references remain separate from funding opportunities', () => {
+  assert.equal(refs.projects.length, 6);
+  assert.equal(refs.fundingResearchUpdate.length, 2);
   assert.ok(refs.projects.every(p => p.repositoryUrl.startsWith('https://github.com/')));
   assert.match(refs.purpose, /must never be inserted into the opportunities table/);
 });

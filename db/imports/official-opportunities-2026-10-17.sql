@@ -139,7 +139,12 @@ WITH added AS (
     NOT EXISTS (
       SELECT 1 FROM _masar_candidates sibling
       WHERE sibling.slug <> c.slug
-        AND regexp_replace(lower(sibling.official_url),'/+
+        AND regexp_replace(lower(sibling.official_url), '/+$', '') =
+            regexp_replace(lower(c.official_url), '/+$', '')
+    )
+    AND regexp_replace(lower(coalesce(o.official_url,'')), '/+$', '') =
+        regexp_replace(lower(c.official_url), '/+$', '')
+   )
  )
  ON CONFLICT (slug) DO NOTHING
  RETURNING id,slug
