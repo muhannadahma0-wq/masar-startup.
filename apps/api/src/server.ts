@@ -20,7 +20,6 @@ function getSupabaseHeaders(): Record<string, string> {
   if (!supabasePublishableKey) throw new Error('Supabase publishable key is not configured');
   return {
     apikey: supabasePublishableKey,
-    authorization: `Bearer ${supabasePublishableKey}`,
   };
 }
 
