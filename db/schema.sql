@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS users (
  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
- auth_user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+ auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
  email TEXT NOT NULL UNIQUE, display_name TEXT NOT NULL,
  preferred_language TEXT NOT NULL DEFAULT 'ar' CHECK (preferred_language IN ('ar','en')),
  role TEXT NOT NULL DEFAULT 'founder' CHECK (role IN ('founder','reviewer','admin')),
