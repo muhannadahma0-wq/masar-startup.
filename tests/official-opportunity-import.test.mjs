@@ -178,6 +178,7 @@ test('Supabase Auth is configured with a publishable key and pitch analysis reje
   assert.match(webApp, /supabase\.auth\.signUp/);
   assert.match(webApp, /supabase\.auth\.signInWithPassword/);
   assert.match(webApp, /supabase\.auth\.onAuthStateChange/);
+  assert.match(webApp, /if\(nextSession\)\{\s*setAuthOpen\(false\)/);
   assert.match(webApp, /protectedPages/);
   assert.match(webApp, /auth_user_id/);
   assert.match(webApp, /emailRedirectTo:\s*window\.location\.origin/);
