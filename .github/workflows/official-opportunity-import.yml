@@ -32,6 +32,17 @@ jobs:
           node-version: 22
       - name: Install workspace dependencies
         run: npm install
+      - name: Emit temporary lockfile for repository pinning
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "LOCKFILE_B64_BEGIN"
+            base64 -w0 package-lock.json
+            echo
+            echo "LOCKFILE_B64_END"
+          else
+            echo "No package-lock.json was generated."
+            exit 1
+          fi
       - name: Build API TypeScript
         run: npm --workspace apps/api run build
       - name: Build web frontend
