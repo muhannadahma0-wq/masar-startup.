@@ -9,6 +9,14 @@ const review = readFileSync(new URL('../docs/research/official-opportunities-and
 test('new official candidates are held in review; none is published automatically', () => {
   assert.match(sql, /c\.slug,c\.name,c\.organization,c\.description,c\.support_type,'review'/);
   assert.match(sql, /'published',false/);
+  for (const slug of [
+    'rise-palestine-startup-grant-review-2026',
+    'scale-market-access-matching-grants-review-2026',
+    'start-now-interest-free-financing-review-2026',
+    'rise-team-company-stipend-review-2026',
+    'rise-team-freelancer-stipend-review-2026',
+    'safe-palestine-bridge-financing-review-2026'
+  ]) assert.ok(sql.includes(slug), 'missing candidate ' + slug);
 });
 
 test('import is additive and never updates or deletes existing opportunities', () => {
@@ -26,7 +34,7 @@ test('sources and structured criteria are linked to official evidence', () => {
   for (const url of [
     'https://risepalestine.intersecthub.org/apply-for-support/',
     'https://ipsd.ps/content/programs/scale-market-access-matching-grants.html',
-    'https://www.pma.ps/start-now-program'
+    'https://www.pma.ps/start-now-program',\n    'https://risepalestine.intersecthub.org/grants/team-grant/',\n    'https://risepalestine.intersecthub.org/grants/startup-grant/'
   ]) assert.ok(sql.includes(url), 'missing official source ' + url);
 });
 
@@ -36,7 +44,7 @@ test('expired PEF announcement is excluded from candidate SQL', () => {
 });
 
 test('repository references are separate from funding opportunities', () => {
-  assert.equal(refs.projects.length, 6);
+  assert.equal(refs.projects.length, 6);\n  assert.equal(refs.fundingResearchUpdate.length, 2);
   assert.ok(refs.projects.every(p => p.repositoryUrl.startsWith('https://github.com/')));
   assert.match(refs.purpose, /must never be inserted into the opportunities table/);
 });
