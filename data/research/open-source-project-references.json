@@ -1,0 +1,96 @@
+{
+  "reviewedAt": "2026-10-17",
+  "purpose": "Research references for Masar Startup architecture and verification. Repositories are not funding opportunities and must never be inserted into the opportunities table.",
+  "reusePolicy": [
+    "Prefer design patterns over copying source code.",
+    "Never copy code without a clearly applicable license.",
+    "Do not reuse UK/EU or India-specific eligibility rules as Palestinian rules.",
+    "Do not reuse ranking models without representative, human-labelled evaluation.",
+    "Preserve required third-party notices for code that is later copied."
+  ],
+  "projects": [
+    {
+      "name": "GrantMatch API",
+      "repositoryUrl": "https://github.com/samiurk70/grantmatch-api",
+      "license": "MIT",
+      "licenseStatus": "MIT identified in the repository; confirm at the exact commit before copying files.",
+      "reusablePatterns": [
+        "Separate deterministic eligibility from semantic relevance and fit ranking.",
+        "Explain ranking factors instead of exposing an opaque score."
+      ],
+      "cautions": [
+        "UK/EU data and eligibility rules do not transfer to Palestine.",
+        "README says the XGBoost reranker is disabled because synthetic data was insufficient; do not reuse its score as a validated model."
+      ],
+      "recommendedUse": "Design reference; implement Palestinian rules and calibrate only on labelled examples."
+    },
+    {
+      "name": "Diligence",
+      "repositoryUrl": "https://github.com/beastofbayarea/diligence",
+      "license": "MIT",
+      "licenseStatus": "Repository declares MIT and includes a LICENSE file.",
+      "reusablePatterns": [
+        "Trace every claim to a source and excerpt.",
+        "Distinguish supported, partial, missing, unverified and contradictory evidence.",
+        "Benchmark verification rather than trusting report fluency."
+      ],
+      "cautions": [
+        "SEC EDGAR and FMP integrations are US-market focused and are not directly applicable to Palestinian grants."
+      ],
+      "recommendedUse": "Methodology for claim-evidence records and reviewer decisions."
+    },
+    {
+      "name": "Pitch",
+      "repositoryUrl": "https://github.com/rk-vashista/pitch",
+      "license": "MIT declared in README",
+      "licenseStatus": "README declares MIT terms; verify the license file and exact commit before copying substantial code.",
+      "reusablePatterns": [
+        "Bounded pitch-review tasks and structured final reports.",
+        "Separate factual findings from improvement suggestions."
+      ],
+      "cautions": [
+        "Do not add a Python service merely to imitate its stack; keep the analyzer aligned with Masar's architecture and deployment boundaries."
+      ],
+      "recommendedUse": "Report and task-decomposition reference."
+    },
+    {
+      "name": "Inovex",
+      "repositoryUrl": "https://github.com/neshandrag/Inovex",
+      "license": "ISC declared in server/package.json",
+      "licenseStatus": "README points to ISC in the server package manifest; confirm license scope and notices before copying frontend/server files.",
+      "reusablePatterns": [
+        "Incubation workflow, mentor/admin review, document status concepts."
+      ],
+      "cautions": [
+        "Uses MongoDB; its collections are not a schema migration guide for PostgreSQL."
+      ],
+      "recommendedUse": "UI and workflow reference unless code license scope is checked."
+    },
+    {
+      "name": "Student Opportunity Platform (SOP)",
+      "repositoryUrl": "https://github.com/DVA07sparksy/SOP",
+      "license": "Unknown",
+      "licenseStatus": "No root license was visible during this review; do not copy code unless permission is clarified.",
+      "reusablePatterns": [
+        "Three-state eligibility outcomes and explanations as product concepts."
+      ],
+      "cautions": [
+        "Small project activity and no clear license."
+      ],
+      "recommendedUse": "Conceptual reference only."
+    },
+    {
+      "name": "Yojana-setu",
+      "repositoryUrl": "https://github.com/Shivanshu49/Yojana-setu",
+      "license": "Unknown",
+      "licenseStatus": "No root license was visible during this review; do not copy source without permission.",
+      "reusablePatterns": [
+        "Public-benefit scheme discovery, deterministic eligibility and relational storage concepts."
+      ],
+      "cautions": [
+        "Jurisdiction-specific scheme data and scraping sources are not Palestinian funding opportunities."
+      ],
+      "recommendedUse": "Conceptual reference only."
+    }
+  ]
+}
