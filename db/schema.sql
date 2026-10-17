@@ -105,19 +105,6 @@ CREATE TABLE IF NOT EXISTS opportunity_source_chunks (
 CREATE INDEX IF NOT EXISTS opportunity_chunk_source_idx ON opportunity_source_chunks(source_id, chunk_index);
 -- Add vector indexes only after embeddings exist and operator support is confirmed.
 
--- Ensure Supabase REST roles exist in vanilla PostgreSQL test/local databases too.
--- Existing Supabase projects already contain these roles, so this block is a no-op there.
-DO $
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
-    CREATE ROLE anon NOLOGIN;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
-    CREATE ROLE authenticated NOLOGIN;
-  END IF;
-END
-$;
-
 -- Security baseline for Supabase/PostgREST deployments.
 -- No client policies are provided for private/user-specific tables; they stay inaccessible
 -- through anon/authenticated until application-specific ownership policies are designed.
