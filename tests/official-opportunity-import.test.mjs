@@ -122,3 +122,16 @@ test('database schema enables RLS on all public tables and only publishes approv
   assert.match(schemaSql, /status = 'published' AND approved_at IS NOT NULL/);
   assert.match(schemaSql, /DROP POLICY IF EXISTS "Public reads approved published opportunities"/);
 });
+
+const webApp = readFileSync(new URL('../apps/web/src/App.tsx', import.meta.url), 'utf8');
+const webEnvExample = readFileSync(new URL('../apps/web/.env.example', import.meta.url), 'utf8');
+
+test('funding opportunities come from the API and do not use hard-coded opportunity demos', () => {
+  assert.match(webApp, /VITE_API_BASE_URL/);
+  assert.match(webApp, /fetch\(\`\$\{apiBase\}\/api\/opportunities\`/);
+  assert.match(webApp, /setOpportunities\(items\.map/);
+  assert.match(webApp, /formatOpportunityAmount/);
+  assert.match(webApp, /o\.sourceUrl/);
+  assert.doesNotMatch(webApp, /const demoOpportunities: Opportunity\[\]/);
+  assert.match(webEnvExample, /VITE_API_BASE_URL=/);
+});
