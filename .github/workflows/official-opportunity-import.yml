@@ -20,6 +20,7 @@ on:
       - "apps/web/package.json"
       - "apps/web/.env.example"
       - "package.json"
+      - "package-lock.json"
       - ".github/workflows/official-opportunity-import.yml"
 
 jobs:
@@ -30,18 +31,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install workspace dependencies
-        run: npm install
-      - name: Emit temporary lockfile for repository pinning
-        run: |
-          if [ -f package-lock.json ]; then
-            echo "LOCKFILE_B64_BEGIN"
-            base64 -w0 package-lock.json | fold -w 4000
-            echo "LOCKFILE_B64_END"
-          else
-            echo "No package-lock.json was generated."
-            exit 1
-          fi
+      - name: Install workspace dependencies from the committed lockfile
+        run: npm ci
       - name: Build API TypeScript
         run: npm --workspace apps/api run build
       - name: Build web frontend
