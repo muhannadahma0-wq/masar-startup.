@@ -159,8 +159,8 @@ test('schema maps Supabase Auth identities and grants only ownership-scoped clie
 });
 
 test('RLS integration fixture verifies two-user isolation and rolls back every fixture row', () => {
-  assert.match(rlsIntegrationSql, /founder-a@example\\.test/);
-  assert.match(rlsIntegrationSql, /founder-b@example\\.test/);
+  assert.ok(rlsIntegrationSql.includes('founder-a@example.test'));
+  assert.ok(rlsIntegrationSql.includes('founder-b@example.test'));
   assert.match(rlsIntegrationSql, /Founder can see another startup profile/);
   assert.match(rlsIntegrationSql, /Founder inserted an application for another founder/);
   assert.match(rlsIntegrationSql, /Founder was able to update their own role/);
