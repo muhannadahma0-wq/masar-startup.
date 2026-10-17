@@ -115,7 +115,7 @@ test('database schema enables RLS on all public tables and only publishes approv
     'application_records', 'notifications', 'source_discovery_runs', 'audit_log', 'opportunity_source_chunks'
   ];
   for (const table of publicTables) {
-    assert.match(schemaSql, new RegExp('ALTER TABLE public\\\\.' + table + ' ENABLE ROW LEVEL SECURITY;'));
+    assert.ok(schemaSql.includes(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY;`), 'RLS missing on ' + table);
   }
   assert.match(schemaSql, /CREATE POLICY "Public reads approved published opportunities"/);
   assert.match(schemaSql, /TO anon, authenticated/);
