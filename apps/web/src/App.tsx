@@ -99,6 +99,11 @@ function App(){
      if(!active)return;
      setSession(nextSession);
      setAuthReady(true);
+     if(nextSession){
+       setAuthOpen(false);
+       setAuthError('');
+       setAuthMessage('');
+     }
      if(!nextSession){
        setMasarUserId(null);
        setProfileId(null);
