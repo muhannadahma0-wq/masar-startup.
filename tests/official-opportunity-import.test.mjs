@@ -90,3 +90,18 @@ test('open-source references remain separate from funding opportunities', () => 
   assert.ok(refs.projects.every(p => p.repositoryUrl.startsWith('https://github.com/')));
   assert.match(refs.purpose, /must never be inserted into the opportunities table/);
 });
+
+const apiServer = readFileSync(new URL('../apps/api/src/server.ts', import.meta.url), 'utf8');
+const apiEnvExample = readFileSync(new URL('../apps/api/.env.example', import.meta.url), 'utf8');
+
+test('Supabase REST fallback reads only published, approved opportunities with a publishable key', () => {
+  assert.match(apiServer, /SUPABASE_URL/);
+  assert.match(apiServer, /SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(apiServer, /apikey:\\s*supabasePublishableKey/);
+  assert.match(apiServer, /status',\\s*'eq\\.published'/);
+  assert.match(apiServer, /approved_at',\\s*'not\\.is\\.null'/);
+  assert.match(apiServer, /mode:\\s*'database'/);
+  assert.match(apiEnvExample, /SUPABASE_URL=/);
+  assert.match(apiEnvExample, /SUPABASE_PUBLISHABLE_KEY=/);
+  assert.doesNotMatch(apiServer, /service_role/i);
+});
