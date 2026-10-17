@@ -7,19 +7,102 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "db/schema.sql"
       - "db/imports/**"
       - "data/research/**"
       - "docs/research/**"
       - "tests/official-opportunity-import.test.mjs"
       - "package.json"
+      - ".github/workflows/official-opportunity-import.yml"
 
 jobs:
-  import-review-tests:
+  static-review-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Run non-destructive safety checks
+      - name: Run non-destructive static checks
         run: npm run test:import-review
+
+  postgres-import-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: masar_test
+          POSTGRES_USER: masar
+          POSTGRES_PASSWORD: test-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U masar -d masar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: masar
+      PGPASSWORD: test-only-password
+      DATABASE_URL: postgresql://masar:test-only-password@localhost:5432/masar_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Apply current schema to an ephemeral database
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+      - name: Seed an unrelated row that must remain unchanged
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
+            INSERT INTO opportunities
+              (slug, name, organization, description, support_type, status)
+            VALUES
+              ('preexisting-import-safety-sentinel', 'Preserve me',
+               'Test Fixture', 'Existing row must not change', 'grant', 'draft');
+          "
+      - name: Run the import and assert six review-only candidates
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/imports/official-opportunities-2026-10-17.sql
+          candidates="'rise-palestine-startup-grant-review-2026','scale-market-access-matching-grants-review-2026','start-now-interest-free-financing-review-2026','rise-team-company-stipend-review-2026','rise-team-freelancer-stipend-review-2026','safe-palestine-bridge-financing-review-2026'"
+          actual="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ($candidates) AND status = 'review'")"
+          test "$actual" = "6"
+          published="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ($candidates) AND status = 'published'")"
+          test "$published" = "0"
+          sources="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM opportunity_sources s JOIN opportunities o ON o.id=s.opportunity_id WHERE o.slug IN ($candidates)")"
+          test "$sources" -gt "0"
+          criteria="$(psql "$DATABASE_URL" -Atc "SELECT count(*) FROM eligibility_criteria c JOIN opportunities o ON o.id=c.opportunity_id WHERE o.slug IN ($candidates)")"
+          test "$criteria" -gt "0"
+          sentinel="$(psql "$DATABASE_URL" -Atc "SELECT name || '|' || description || '|' || status FROM opportunities WHERE slug='preexisting-import-safety-sentinel'")"
+          test "$sentinel" = "Preserve me|Existing row must not change|draft"
+      - name: Re-run import to prove idempotency
+        run: |
+          before="$(psql "$DATABASE_URL" -Atc "SELECT (SELECT count(*) FROM opportunities), (SELECT count(*) FROM opportunity_sources), (SELECT count(*) FROM eligibility_criteria)")"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/imports/official-opportunities-2026-10-17.sql
+          after="$(psql "$DATABASE_URL" -Atc "SELECT (SELECT count(*) FROM opportunities), (SELECT count(*) FROM opportunity_sources), (SELECT count(*) FROM eligibility_criteria)")"
+          test "$before" = "$after"
+      - name: Test duplicate-name preservation on a second temporary database
+        run: |
+          createdb -h localhost -p 5432 -U masar masar_duplicate_test
+          duplicate_url="postgresql://masar:test-only-password@localhost:5432/masar_duplicate_test"
+          psql "$duplicate_url" -v ON_ERROR_STOP=1 -f db/schema.sql
+          psql "$duplicate_url" -v ON_ERROR_STOP=1 -c "
+            INSERT INTO opportunities
+              (slug, name, organization, description, support_type, status, official_url)
+            VALUES
+              ('existing-scale-do-not-overwrite',
+               'Scale (Market-Access Matching Grants)',
+               'Existing Operator', 'Keep exact existing record',
+               'grant', 'draft', 'https://legacy.example/scale');
+          "
+          psql "$duplicate_url" -v ON_ERROR_STOP=1 -f db/imports/official-opportunities-2026-10-17.sql
+          preserved="$(psql "$duplicate_url" -Atc "SELECT organization || '|' || description || '|' || status || '|' || official_url FROM opportunities WHERE slug='existing-scale-do-not-overwrite'")"
+          test "$preserved" = "Existing Operator|Keep exact existing record|draft|https://legacy.example/scale"
+          scale_imported="$(psql "$duplicate_url" -Atc "SELECT count(*) FROM opportunities WHERE slug='scale-market-access-matching-grants-review-2026'")"
+          test "$scale_imported" = "0"
+          other_candidates="$(psql "$duplicate_url" -Atc "SELECT count(*) FROM opportunities WHERE slug IN ('rise-palestine-startup-grant-review-2026','start-now-interest-free-financing-review-2026','rise-team-company-stipend-review-2026','rise-team-freelancer-stipend-review-2026','safe-palestine-bridge-financing-review-2026') AND status='review'")"
+          test "$other_candidates" = "5"
