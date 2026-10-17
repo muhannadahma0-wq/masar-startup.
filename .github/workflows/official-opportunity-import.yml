@@ -27,6 +27,8 @@ jobs:
         run: npm install
       - name: Build API TypeScript
         run: npm --workspace apps/api run build
+      - name: Build web frontend
+        run: npm run build:web
       - name: Run non-destructive static checks
         run: npm run test:import-review
 
