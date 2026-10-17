@@ -43,7 +43,8 @@ test('official evidence and rule records are included', () => {
     'https://risepalestinesubmit.intersecthub.org/grant/startup%20Grant',
     'https://risepalestinesubmit.intersecthub.org/grant/team%20Grant',
     'https://risepalestinesubmit.intersecthub.org/grant/freelancer%20Grant',
-    'https://fs20.formsite.com/DAIForms/NEXUS-Scale/login'
+    'https://fs20.formsite.com/DAIForms/NEXUS-Scale/login',
+    'https://airtable.com/appQmP5eXgHfbG51m/shrMZRS8rhyjfyWvZ'
   ]) assert.ok(sql.includes(url), 'missing official source ' + url);
 });
 
