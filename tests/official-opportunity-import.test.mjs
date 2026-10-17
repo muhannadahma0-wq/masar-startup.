@@ -175,6 +175,12 @@ test('Supabase Auth is configured with a publishable key and pitch analysis reje
   assert.match(webClientSource, /VITE_SUPABASE_URL/);
   assert.match(webClientSource, /VITE_SUPABASE_PUBLISHABLE_KEY/);
   assert.match(webClientSource, /createClient\(url, publishableKey/);
+  assert.match(webApp, /supabase\.auth\.signUp/);
+  assert.match(webApp, /supabase\.auth\.signInWithPassword/);
+  assert.match(webApp, /supabase\.auth\.onAuthStateChange/);
+  assert.match(webApp, /protectedPages/);
+  assert.match(webApp, /auth_user_id/);
+  assert.match(webApp, /emailRedirectTo:\s*window\.location\.origin/);
   assert.doesNotMatch(webClientSource, /service_role|sb_secret_/i);
   assert.match(apiSource, /async function validateSupabaseAccessToken/);
   assert.match(apiSource, /new URL\('\/auth\/v1\/user', supabaseUrl\)/);
