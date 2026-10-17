@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { Activity, ArrowDownToLine, Bell, CheckCircle2, ChevronDown, CircleHelp, Compass, FileText, Gauge, Globe2, LayoutDashboard, ListChecks, LogIn, LogOut, Menu, Rocket, Search, Settings, ShieldCheck, Sparkles, UploadCloud, WandSparkles, X } from 'lucide-react';
 import { supabase, supabaseConfigured } from './lib/supabase';
@@ -205,7 +206,7 @@ function App(){
    setPendingPage(null);
    if(next){setPage(next);setMobileNav(false);window.scrollTo({top:0,behavior:'smooth'});}
  };
- const submitAuth=async(event:React.FormEvent<HTMLFormElement>)=>{
+ const submitAuth=async(event:FormEvent<HTMLFormElement>)=>{
    event.preventDefault();
    if(!supabase){setAuthError(t.authMissingConfig);return;}
    setAuthBusy(true);
