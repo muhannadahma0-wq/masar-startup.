@@ -55,8 +55,8 @@ test('post-import verifier is read-only and checks each candidate plus linked ev
   assert.match(verifySql, /BEGIN TRANSACTION READ ONLY;/i);
   assert.match(verifySql, /COMMIT;/i);
   assert.match(verifySql, /FROM opportunities/i);
-  assert.match(verifySql, /FROM opportunity_sources/i);
-  assert.match(verifySql, /FROM eligibility_criteria/i);
+  assert.match(verifySql, /JOIN opportunity_sources/i);
+  assert.match(verifySql, /JOIN eligibility_criteria/i);
   assert.match(verifySql, /FROM source_discovery_runs/i);
   assert.doesNotMatch(verifySql, /\b(?:INSERT\s+INTO|UPDATE\s+opportunities|DELETE\s+FROM|TRUNCATE|DROP\s+TABLE|ALTER\s+TABLE)\b/i);
   for (const slug of candidateSlugs) assert.ok(verifySql.includes(slug), 'verifier missing candidate ' + slug);
