@@ -141,18 +141,21 @@ test('funding opportunities come from the API and do not use hard-coded opportun
 const rlsIntegrationSql = readFileSync(new URL('./rls-ownership.integration.sql', import.meta.url), 'utf8');
 
 test('schema maps Supabase Auth identities and grants only ownership-scoped client access', () => {
-  assert.match(schemaSql, /auth_user_id UUID UNIQUE REFERENCES auth\\.users\\(id\\) ON DELETE CASCADE/);
-  assert.match(schemaSql, /CREATE SCHEMA IF NOT EXISTS private/);
-  assert.match(schemaSql, /CREATE OR REPLACE FUNCTION private\\.current_masar_user_id\\(\\)/);
-  assert.match(schemaSql, /CREATE OR REPLACE FUNCTION private\\.current_masar_user_role\\(\\)/);
-  assert.match(schemaSql, /CREATE TRIGGER masar_create_public_user_after_auth_signup/);
-  assert.match(schemaSql, /REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM anon, authenticated/);
-  assert.match(schemaSql, /CREATE POLICY "Owners read own startup profiles"/);
-  assert.match(schemaSql, /CREATE POLICY "Owners create applications for own startups"/);
-  assert.match(schemaSql, /CREATE POLICY "Owners read own notifications"/);
-  assert.match(schemaSql, /CREATE POLICY "Administrators read audit log"/);
-  assert.match(schemaSql, /CREATE POLICY "Reviewers read source chunks"/);
-  assert.doesNotMatch(schemaSql, /CREATE OR REPLACE FUNCTION public\\.current_masar_user_(id|role)\\(\\)/);
+  assert.ok(schemaSql.includes('auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE'));
+  assert.ok(schemaSql.includes('CREATE SCHEMA IF NOT EXISTS private'));
+  assert.ok(schemaSql.includes('CREATE OR REPLACE FUNCTION private.current_masar_user_id()'));
+  assert.ok(schemaSql.includes('CREATE OR REPLACE FUNCTION private.current_masar_user_role()'));
+  assert.ok(schemaSql.includes('CREATE TRIGGER masar_create_public_user_after_auth_signup'));
+  assert.ok(schemaSql.includes('REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM anon, authenticated'));
+  for (const policy of [
+    'Owners read own startup profiles',
+    'Owners create applications for own startups',
+    'Owners read own notifications',
+    'Administrators read audit log',
+    'Reviewers read source chunks'
+  ]) assert.ok(schemaSql.includes('CREATE POLICY "' + policy + '"'), 'missing policy ' + policy);
+  assert.ok(!schemaSql.includes('CREATE OR REPLACE FUNCTION public.current_masar_user_id()'));
+  assert.ok(!schemaSql.includes('CREATE OR REPLACE FUNCTION public.current_masar_user_role()'));
 });
 
 test('RLS integration fixture verifies two-user isolation and rolls back every fixture row', () => {
