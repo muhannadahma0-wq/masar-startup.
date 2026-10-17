@@ -1,0 +1,25 @@
+name: Official opportunity import safety checks
+
+on:
+  push:
+    branches:
+      - research/official-opportunity-import-2026-10-17
+  pull_request:
+    branches: [main]
+    paths:
+      - "db/imports/**"
+      - "data/research/**"
+      - "docs/research/**"
+      - "tests/official-opportunity-import.test.mjs"
+      - "package.json"
+
+jobs:
+  import-review-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run non-destructive safety checks
+        run: npm run test:import-review
