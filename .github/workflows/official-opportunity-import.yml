@@ -36,8 +36,7 @@ jobs:
         run: |
           if [ -f package-lock.json ]; then
             echo "LOCKFILE_B64_BEGIN"
-            base64 -w0 package-lock.json
-            echo
+            base64 -w0 package-lock.json | fold -w 4000
             echo "LOCKFILE_B64_END"
           else
             echo "No package-lock.json was generated."
@@ -88,6 +87,16 @@ jobs:
           if (!Array.isArray(result.items)) throw new Error('Opportunity items are not an array');
           console.log(`Live smoke test passed: database=${health.database}; mode=${result.mode}; visible published opportunities=${result.items.length}.`);
           NODE
+          pitch_file="$(mktemp)"
+          trap 'rm -f "$health_file" "$opportunities_file" "$pitch_file"' EXIT
+          pitch_status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 -X POST -o "$pitch_file" -w '%{http_code}' "$API_BASE_URL/api/pitch-analyses")"
+          if [ "$pitch_status" != "401" ]; then
+            cat "$pitch_file"
+            echo "Anonymous pitch-analysis request should return HTTP 401, got $pitch_status."
+            exit 1
+          fi
+          node -e 'const fs=require("node:fs");const x=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));if(x.error!=="AUTHENTICATION_REQUIRED")throw new Error("Unexpected anonymous pitch response: "+JSON.stringify(x));' "$pitch_file"
+          echo "Live auth smoke test passed: anonymous pitch-analysis upload is rejected before file parsing."
 
   postgres-import-integration:
     runs-on: ubuntu-latest
