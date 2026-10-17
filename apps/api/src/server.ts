@@ -12,6 +12,49 @@ const maxFileBytes = Number(process.env.MAX_FILE_SIZE_MB || 20) * 1024 * 1024;
 const pitchServiceUrl = process.env.PITCH_ANALYZER_URL || 'http://127.0.0.1:8000/internal/analyze';
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: maxFileBytes, files: 1 } });
 const pool = process.env.DATABASE_URL ? new Pool({ connectionString: process.env.DATABASE_URL, max: 8, idleTimeoutMillis: 30_000, connectionTimeoutMillis: 5_000, ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: true } : undefined }) : null;
+const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+const supabaseRestConfigured = Boolean(supabaseUrl && supabasePublishableKey);
+
+function getSupabaseHeaders(): Record<string, string> {
+  if (!supabasePublishableKey) throw new Error('Supabase publishable key is not configured');
+  return {
+    apikey: supabasePublishableKey,
+    authorization: `Bearer ${supabasePublishableKey}`,
+  };
+}
+
+async function fetchPublishedOpportunities(): Promise<unknown[]> {
+  if (!supabaseUrl || !supabasePublishableKey) throw new Error('Supabase REST is not configured');
+  const url = new URL('/rest/v1/opportunities', supabaseUrl);
+  url.searchParams.set('select', 'id,name,organization,type:support_type,amount_min,amount_max,currency,deadline,sourceUrl:official_url,lastVerifiedAt:last_verified_at');
+  url.searchParams.set('status', 'eq.published');
+  url.searchParams.set('approved_at', 'not.is.null');
+  url.searchParams.set('order', 'deadline.asc.nullsfirst');
+  url.searchParams.set('limit', '200');
+  const response = await fetch(url, {
+    headers: getSupabaseHeaders(),
+    signal: AbortSignal.timeout(5_000),
+  });
+  if (!response.ok) throw new Error(`Supabase REST returned HTTP ${response.status}`);
+  return await response.json() as unknown[];
+}
+
+async function checkSupabaseRest(): Promise<boolean> {
+  if (!supabaseUrl || !supabasePublishableKey) return false;
+  try {
+    const url = new URL('/rest/v1/opportunities', supabaseUrl);
+    url.searchParams.set('select', 'id');
+    url.searchParams.set('limit', '1');
+    const response = await fetch(url, {
+      headers: getSupabaseHeaders(),
+      signal: AbortSignal.timeout(5_000),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 const allowedOrigins = (process.env.WEB_ORIGIN || 'http://localhost:5173').split(',').map(x => x.trim());
 app.disable('x-powered-by');
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -24,10 +67,42 @@ const demoOpportunities = [
  { id:'op4', name:'Future Solutions Challenge', organization:'Example innovation challenge', type:'competition', status:'illustrative', sourceUrl:null, lastVerifiedAt:null },
 ];
 app.get('/', (_req, res) => res.json({ ok:true, service:'masar-api', status:'prototype', health:'/health' }));
-app.get('/health', async (_req,res) => { let database='not_configured'; if(pool){try{await pool.query('SELECT 1');database='connected';}catch{database='unavailable';}} res.json({ok:true,service:'masar-api',status:'prototype',database}); });
-app.get('/api/opportunities', async (_req,res) => {
- if(pool){try{const result=await pool.query(`SELECT id, name, organization, support_type AS type, amount_min, amount_max, currency, deadline, official_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt" FROM opportunities WHERE status = 'published' AND approved_at IS NOT NULL ORDER BY deadline ASC NULLS LAST LIMIT 200`);return res.json({items:result.rows,mode:'database',disclaimer:'Published records should be backed by reviewed official sources.'});}catch(err){console.error('Opportunity query failed',err);return res.status(503).json({error:'OPPORTUNITY_DATABASE_UNAVAILABLE'});}}
- return res.json({items:demoOpportunities,mode:'demo',disclaimer:'Illustrative records only. Replace with reviewed official-source records before production.'});
+app.get('/health', async (_req, res) => {
+  let database = 'not_configured';
+  if (pool) {
+    try {
+      await pool.query('SELECT 1');
+      database = 'connected';
+    } catch {
+      database = 'unavailable';
+    }
+  } else if (supabaseRestConfigured) {
+    database = await checkSupabaseRest() ? 'connected' : 'unavailable';
+  }
+  res.json({ ok: true, service: 'masar-api', status: 'prototype', database });
+});
+app.get('/api/opportunities', async (_req, res) => {
+  if (pool) {
+    try {
+      const result = await pool.query(`SELECT id, name, organization, support_type AS type, amount_min, amount_max, currency, deadline, official_url AS "sourceUrl", last_verified_at AS "lastVerifiedAt" FROM opportunities WHERE status = 'published' AND approved_at IS NOT NULL ORDER BY deadline ASC NULLS LAST LIMIT 200`);
+      return res.json({ items: result.rows, mode: 'database', disclaimer: 'Published records should be backed by reviewed official sources.' });
+    } catch (err) {
+      console.error('Opportunity query failed', err);
+      return res.status(503).json({ error: 'OPPORTUNITY_DATABASE_UNAVAILABLE' });
+    }
+  }
+
+  if (supabaseRestConfigured) {
+    try {
+      const items = await fetchPublishedOpportunities();
+      return res.json({ items, mode: 'database', disclaimer: 'Published records should be backed by reviewed official sources.' });
+    } catch (err) {
+      console.error('Supabase opportunity query failed', err);
+      return res.status(503).json({ error: 'OPPORTUNITY_DATABASE_UNAVAILABLE' });
+    }
+  }
+
+  return res.json({ items: demoOpportunities, mode: 'demo', disclaimer: 'Illustrative records only. Replace with reviewed official-source records before production.' });
 });
 app.post('/api/eligibility/evaluate',(req,res)=>{const parsed=EvaluationInputSchema.safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'INVALID_EVALUATION_INPUT',details:parsed.error.flatten()});return res.json(evaluateEligibility(parsed.data));});
 const AnalyzeFieldsSchema = z.object({ startup_name: z.string().trim().min(1).max(120).default('Unnamed startup') });
