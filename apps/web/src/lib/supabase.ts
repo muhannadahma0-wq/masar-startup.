@@ -7,7 +7,7 @@ export const supabaseConfigured = Boolean(url && publishableKey);
 
 /**
  * Browser-side client: publishable key only. Database authorization is enforced by RLS.
- * Do not replace this key with a Supabase secret/service_role key.
+ * Never use a Supabase secret key in the browser.
  */
 export const supabase = supabaseConfigured && url && publishableKey
   ? createClient(url, publishableKey, {
