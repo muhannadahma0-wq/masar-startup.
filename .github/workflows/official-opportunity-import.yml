@@ -56,6 +56,12 @@ jobs:
           sudo apt-get install -y postgresql-client
       - name: Apply current schema to an ephemeral database
         run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+      - name: Run read-only database preflight
+        run: |
+          preflight_output="$(psql "$DATABASE_URL" -At -v ON_ERROR_STOP=1 -f db/imports/preflight-official-opportunities-2026-10-17.sql)"
+          printf '%s\n' "$preflight_output"
+          preflight_summary="$(printf '%s\n' "$preflight_output" | tail -n 1)"
+          test "$preflight_summary" = "t|t"
       - name: Seed an unrelated row that must remain unchanged
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "
