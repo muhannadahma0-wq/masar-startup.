@@ -73,7 +73,7 @@ test('production preflight only reads database identity, schema tables, and exte
   assert.match(preflightSql, /source_discovery_runs/);
   assert.match(preflightSql, /pgcrypto/);
   assert.match(preflightSql, /vector/);
-  assert.doesNotMatch(preflightSql, /\\b(?:INSERT\\s+INTO|UPDATE\\s+|DELETE\\s+FROM|TRUNCATE|DROP\\s+TABLE|ALTER\\s+TABLE|CREATE\\s+)\\b/i);
+  assert.doesNotMatch(preflightSql, /\b(?:INSERT\s+INTO|UPDATE\s+|DELETE\s+FROM|TRUNCATE|DROP\s+TABLE|ALTER\s+TABLE|CREATE\s+)\b/i);
   assert.match(runbook, /لا ترسل كلمة مرور قاعدة البيانات/);
   assert.match(runbook, /backup|نسخة احتياطية/i);
   assert.match(runbook, /database: connected/);
