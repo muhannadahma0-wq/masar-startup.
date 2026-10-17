@@ -136,3 +136,30 @@ test('funding opportunities come from the API and do not use hard-coded opportun
   assert.doesNotMatch(webApp, /const demoOpportunities: Opportunity\[\]/);
   assert.match(webEnvExample, /VITE_API_BASE_URL=/);
 });
+
+
+const rlsIntegrationSql = readFileSync(new URL('./rls-ownership.integration.sql', import.meta.url), 'utf8');
+
+test('schema maps Supabase Auth identities and grants only ownership-scoped client access', () => {
+  assert.match(schemaSql, /auth_user_id UUID UNIQUE REFERENCES auth\\.users\\(id\\) ON DELETE CASCADE/);
+  assert.match(schemaSql, /CREATE SCHEMA IF NOT EXISTS private/);
+  assert.match(schemaSql, /CREATE OR REPLACE FUNCTION private\\.current_masar_user_id\\(\\)/);
+  assert.match(schemaSql, /CREATE OR REPLACE FUNCTION private\\.current_masar_user_role\\(\\)/);
+  assert.match(schemaSql, /CREATE TRIGGER masar_create_public_user_after_auth_signup/);
+  assert.match(schemaSql, /REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM anon, authenticated/);
+  assert.match(schemaSql, /CREATE POLICY "Owners read own startup profiles"/);
+  assert.match(schemaSql, /CREATE POLICY "Owners create applications for own startups"/);
+  assert.match(schemaSql, /CREATE POLICY "Owners read own notifications"/);
+  assert.match(schemaSql, /CREATE POLICY "Administrators read audit log"/);
+  assert.match(schemaSql, /CREATE POLICY "Reviewers read source chunks"/);
+  assert.doesNotMatch(schemaSql, /CREATE OR REPLACE FUNCTION public\\.current_masar_user_(id|role)\\(\\)/);
+});
+
+test('RLS integration fixture verifies two-user isolation and rolls back every fixture row', () => {
+  assert.match(rlsIntegrationSql, /founder-a@example\\.test/);
+  assert.match(rlsIntegrationSql, /founder-b@example\\.test/);
+  assert.match(rlsIntegrationSql, /Founder can see another startup profile/);
+  assert.match(rlsIntegrationSql, /Founder inserted an application for another founder/);
+  assert.match(rlsIntegrationSql, /Founder was able to update their own role/);
+  assert.match(rlsIntegrationSql, /ROLLBACK;/);
+});
